@@ -1,0 +1,71 @@
+<div class="container">
+  <div class="row">
+    <div class="col-xs-12 col-md-8 chat-column">
+      <div class="chat-card">
+
+        <!-- Affichage des messages  -->
+        <% if @default_trainee %>
+          <%= simple_form_for [@user, @message], remote: true, class: 'chat-form' do |f| %>
+            <%= f.error_notification %>
+            <%= hidden_field_tag :recipient_id, @default_trainee.id, class: 'js-message-recipient-id' %>
+            <%= f.input :content, label: false, placeholder: 'Your message', as: :text, class: "form-control" %>
+            <%#= f.association :recipient, collection: @user_names, value_method: :id %>
+
+            <%= f.button :submit, class: "btn btn-primary"  %>
+          <% end %>
+          <%= render 'messages/index', messages: @messages, trainee: @default_trainee %>
+        <% end %>
+      </div>
+    </div>
+    <div class="col-xs-12 col-md-4">
+      <h1>Your trainees</h1>
+
+      <% @users.each do |user| %>
+        <div class="cols-xs-12">
+          <div class="trainee-card text-center" data-user-id="<%= user.id %>">
+            <%= image_tag user.picture.url(:medium) %>
+            <p><%= user.first_name %></p>
+            <!-- affichier le nombre de message avec read_at = nil -->
+            <%if @unread_messages.where(sender: user).count > 0%>
+              <p class="notification"><i class="fa fa-envelope"></i> <%= @unread_messages.where(sender: user).count  %></p>
+            <%end%>
+            <%= link_to "see goals", user_goals_path(user), class: "btn btn-success"%>
+          </div>
+        </div>
+      <% end %>
+
+    </div>
+  </div>
+</div>
+
+<%= content_for(:after_js) do %>
+  <script>
+    <% if @default_trainee %>
+      $(document).ready(function() {
+        $.get('/messages?user_id=' + <%= @default_trainee.id %>, function(data) {})
+      });
+    <% end %>
+
+// permet de rafraichir la liste de message mais je comment car pas pratique pour lecture
+    // setInterval(function() {
+    //   var trainee_id = $('.js-user-messages').data('trainee-id');
+    //   $.get('/messages?user_id=' + trainee_id, function(data) {})
+    // }, 10000);
+
+    $(".trainee-card").on("click", function(){
+      var user_id = $(this).data("user-id");
+      $.get('/messages?user_id=' + user_id, function(data) {});
+      $(this).find(".notification").hide();
+      $.get('/messages/read', function(data) {});
+      $('.js-message-recipient-id').val(user_id);
+    });
+
+    var height = $('.trainee').outerHeight();
+    $('.messages').height(height)
+    $('.messages')[0].scrollTop = $('.messages')[0].scrollHeight;
+
+  </script>
+<% end %>
+    </div>
+  </div>
+</div>
